@@ -8,8 +8,8 @@ let stock = {
 };
 
 let workers = {
-    '1': {number:'01', name:'Rajesh Kumar', pieces:0, bills:0, incentive:0},
-    '2': {number:'02', name:'Priya Singh', pieces:0, bills:0, incentive:0}
+    '01': {number:'01', name:'Rajesh Kumar', pieces:0, bills:0, incentive:0},
+    '02': {number:'02', name:'Priya Singh', pieces:0, bills:0, incentive:0}
 };
 
 let customers = {};
