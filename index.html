@@ -62,7 +62,7 @@
                 <!-- Add Items -->
                 <div class="card">
                     <div class="card-title">Add Items</div>
-                    
+                   
                     <div class="form-group" style="margin-bottom: 1rem;">
                         <label>Stock Code (3 digits)</label>
                         <input type="text" id="stockCode" class="stock-input" placeholder="101" maxlength="3">
@@ -139,7 +139,7 @@
             <!-- Stock Manager -->
             <section id="stock" class="section">
                 <h2>Stock Manager</h2>
-                
+               
                 <div class="card">
                     <div class="card-title">Add New Product</div>
                     <div class="form-grid">
@@ -177,7 +177,7 @@
             <!-- Customer Lookup -->
             <section id="customer" class="section">
                 <h2>Customer Lookup</h2>
-                
+               
                 <div class="card">
                     <input type="tel" id="searchPhone" placeholder="Enter phone number" style="width:70%;padding:0.75rem;border:1px solid #D1D5DB;border-radius:6px;margin-right:1rem;">
                     <button class="btn btn-primary" onclick="searchCustomer()">🔍 Search</button>
@@ -189,100 +189,37 @@
             <!-- Incentives -->
             <section id="incentives" class="section">
                 <h2>Worker Incentives (₹1 per piece)</h2>
-                
-                <!-- Supervisor Login -->
-                <div class="card" id="supervisorLogin">
-                    <div class="card-title">🔒 Supervisor Access Required</div>
-                    <p style="color:#6B7280;margin-bottom:1rem;">Enter supervisor password to view and manage worker incentives.</p>
-                    <div style="display:flex;gap:1rem;align-items:end;">
-                        <div class="form-group" style="flex:1;">
-                            <label>Supervisor Password</label>
-                            <input type="password" id="supervisorPassword" placeholder="Enter password" onkeypress="if(event.key==='Enter') loginSupervisor()">
+               
+                <div class="card">
+                    <div class="card-title">Add New Worker</div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Worker Number</label>
+                            <input type="text" id="newWorkerNumber" placeholder="03" maxlength="2">
                         </div>
-                        <button class="btn btn-primary" onclick="loginSupervisor()">🔓 Login</button>
+                        <div class="form-group">
+                            <label>Worker Name</label>
+                            <input type="text" id="newWorkerName" placeholder="Enter name">
+                        </div>
                     </div>
-                    <small style="color:#9CA3AF;">Default password: admin123 (Change in settings)</small>
+                    <button class="btn btn-primary" onclick="addWorker()">Add Worker</button>
                 </div>
 
-                <!-- Supervisor Content (Hidden by default) -->
-                <div id="supervisorContent" style="display:none;">
-                    
-                    <!-- Logout Button -->
-                    <div style="text-align:right;margin-bottom:1rem;">
-                        <button class="btn btn-danger" onclick="logoutSupervisor()">🔒 Logout</button>
-                    </div>
-
-                    <!-- Add New Worker -->
-                    <div class="card">
-                        <div class="card-title">Add New Worker</div>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label>Worker Number (2 digits)</label>
-                                <input type="text" id="newWorkerNumber" placeholder="03" maxlength="2">
-                            </div>
-                            <div class="form-group">
-                                <label>Worker Name</label>
-                                <input type="text" id="newWorkerName" placeholder="Enter name">
-                            </div>
-                        </div>
-                        <button class="btn btn-primary" onclick="addWorker()">➕ Add Worker</button>
-                    </div>
-
-                    <!-- Manual Incentive Adjustment (Supervisor Only) -->
-                    <div class="card">
-                        <div class="card-title">📝 Adjust Worker Incentive (Supervisor Only)</div>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label>Worker Number</label>
-                                <input type="text" id="adjustWorkerNumber" placeholder="01" maxlength="2">
-                            </div>
-                            <div class="form-group">
-                                <label>Add/Subtract Pieces</label>
-                                <input type="number" id="adjustPieces" placeholder="e.g., 10 or -5">
-                            </div>
-                            <div class="form-group">
-                                <label>Reason</label>
-                                <input type="text" id="adjustReason" placeholder="Bonus/Penalty reason">
-                            </div>
-                        </div>
-                        <button class="btn btn-primary" onclick="adjustWorkerIncentive()">💰 Adjust Incentive</button>
-                    </div>
-
-                    <!-- Worker Performance Table -->
-                    <div class="card">
-                        <div class="card-title">Worker Performance</div>
-                        
-                        <!-- Action Buttons -->
-                        <div style="display:flex;gap:1rem;margin-bottom:1rem;flex-wrap:wrap;">
-                            <button class="btn btn-danger" onclick="clearMonthlyIncentives()" style="background:#DC2626;">
-                                🗑️ Clear All Incentives (Monthly Reset)
-                            </button>
-                            <button class="btn" onclick="exportIncentiveReport()" style="background:#F59E0B;color:white;">
-                                📄 Export Report
-                            </button>
-                        </div>
-                        
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Number</th>
-                                    <th>Name</th>
-                                    <th>Pieces</th>
-                                    <th>Bills</th>
-                                    <th>Incentive</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="workersTableBody"></tbody>
-                        </table>
-                    </div>
+                <div class="card">
+                    <div class="card-title">Worker Performance</div>
+                    <table>
+                        <thead>
+                            <tr><th>Number</th><th>Name</th><th>Pieces</th><th>Bills</th><th>Incentive</th></tr>
+                        </thead>
+                        <tbody id="workersTableBody"></tbody>
+                    </table>
                 </div>
             </section>
 
             <!-- Reports -->
             <section id="reports" class="section">
                 <h2>Reports</h2>
-                
+               
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-icon blue">💰</div>
