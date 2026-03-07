@@ -1,188 +1,110 @@
-// Global Data
-let stock = {
-    '101': {code:'101', name:'Laptop Dell', price:45000, stock:50},
-    '102': {code:'102', name:'Mouse Wireless', price:350, stock:200},
-    '103': {code:'103', name:'Keyboard Mechanical', price:2500, stock:100},
-    '104': {code:'104', name:'Monitor 24 inch', price:12000, stock:75},
-    '105': {code:'105', name:'USB Cable', price:150, stock:500}
-};
-
-let workers = {
-    '01': {number:'01', name:'Rajesh Kumar', pieces:0, bills:0, incentive:0},
-    '02': {number:'02', name:'Priya Singh', pieces:0, bills:0, incentive:0}
-};
-
-let customers = {};
-let bills = [];
+// Global variables
 let billItems = [];
 let currentProduct = null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
-    loadData();
     updateDateTime();
     setInterval(updateDateTime, 1000);
-    setupEnterKeyNavigation();
-    setupStockCodeSearch();
-    setupWorkerNumberInput();
-    updateStockTable();
-    updateWorkerTable();
-    updateReports();
-    setupNavigation();
+    setupEnterKeys();
+    loadInitialData();
 });
 
-// Update DateTime
 function updateDateTime() {
     const now = new Date();
     document.getElementById('currentDate').textContent = now.toLocaleDateString('en-IN');
     document.getElementById('currentTime').textContent = now.toLocaleTimeString('en-IN');
 }
 
-// Navigation
-function setupNavigation() {
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const section = this.dataset.section;
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(section).classList.add('active');
-            this.classList.add('active');
-            
-            if (section === 'reports') updateReports();
-        });
-    });
+// ENTER KEY NAVIGATION - COMPLETE
+function setupEnterKeys() {
+    document.getElementById('customerName').onkeypress = (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); document.getElementById('customerPhone').focus(); }
+    };
+    
+    document.getElementById('customerPhone').onkeypress = (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); document.getElementById('customerEmail').focus(); }
+    };
+    
+    document.getElementById('customerEmail').onkeypress = (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); document.getElementById('customerAddress').focus(); }
+    };
+    
+    document.getElementById('customerAddress').onkeypress = (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); document.getElementById('stockCode').focus(); }
+    };
+    
+    document.getElementById('stockCode').oninput = (e) => {
+        if (e.target.value.length === 3) searchStock(e.target.value);
+    };
+    
+    document.getElementById('stockCode').onkeypress = (e) => {
+        if (e.key === 'Enter' && currentProduct) { e.preventDefault(); document.getElementById('itemQuantity').focus(); }
+    };
+    
+    document.getElementById('itemQuantity').onkeypress = (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); document.getElementById('itemPrice').focus(); }
+    };
+    
+    document.getElementById('itemPrice').onkeypress = (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); document.getElementById('itemDiscount').focus(); }
+    };
+    
+    document.getElementById('itemDiscount').onkeypress = (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); addItem(); }
+    };
+    
+    document.getElementById('workerNumber').oninput = (e) => checkWorker(e.target.value);
+    
+    document.getElementById('workerNumber').onkeypress = (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); generateBill(); }
+    };
 }
 
-// ENTER KEY NAVIGATION FOR ALL FIELDS
-function setupEnterKeyNavigation() {
-    const fields = [
-        'customerName',
-        'customerPhone',
-        'customerEmail',
-        'customerAddress',
-        'stockCode',
-        'itemQuantity',
-        'itemDiscount',
-        'workerNumber'
-    ];
-    
-    // Customer Name -> Phone
-    document.getElementById('customerName').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            document.getElementById('customerPhone').focus();
-        }
-    });
-    
-    // Phone -> Email
-    document.getElementById('customerPhone').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            document.getElementById('customerEmail').focus();
-        }
-    });
-    
-    // Email -> Address
-    document.getElementById('customerEmail').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            document.getElementById('customerAddress').focus();
-        }
-    });
-    
-    // Address -> Stock Code
-    document.getElementById('customerAddress').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            document.getElementById('stockCode').focus();
-        }
-    });
-    
-    // Stock Code -> Quantity (after product loads)
-    document.getElementById('stockCode').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            if (currentProduct) {
-                document.getElementById('itemQuantity').focus();
-            }
-        }
-    });
-    
-    // Quantity -> Discount
-    document.getElementById('itemQuantity').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            document.getElementById('itemDiscount').focus();
-        }
-    });
-    
-    // Discount -> Add Item & back to Stock Code
-    document.getElementById('itemDiscount').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            addItem();
-        }
-    });
-    
-    // Worker Number -> Generate Bill
-    document.getElementById('workerNumber').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            generateBill();
-        }
-    });
-    
-    // Generate Bill button click
-    document.getElementById('generateBillBtn').addEventListener('click', generateBill);
-}
-
-// Stock Code Search
-function setupStockCodeSearch() {
-    const input = document.getElementById('stockCode');
-    input.addEventListener('input', function() {
-        const code = this.value;
-        if (code.length === 3 && stock[code]) {
-            currentProduct = stock[code];
-            showProductDetails(stock[code]);
-        } else {
-            hideProductDetails();
-        }
-    });
-}
-
-function showProductDetails(product) {
-    document.getElementById('productDetails').style.display = 'block';
-    document.getElementById('productName').textContent = product.name;
-    document.getElementById('productPrice').textContent = product.price.toFixed(2);
-    document.getElementById('productStock').textContent = product.stock;
-    document.getElementById('itemQuantity').value = 1;
-    document.getElementById('itemDiscount').value = 0;
-}
-
-function hideProductDetails() {
-    document.getElementById('productDetails').style.display = 'none';
-    currentProduct = null;
-}
-
-// Worker Number Input
-function setupWorkerNumberInput() {
-    const input = document.getElementById('workerNumber');
-    input.addEventListener('input', function() {
-        const number = this.value;
-        const worker = workers[number];
-        const totalPieces = billItems.reduce((sum, item) => sum + item.qty, 0);
+// Search stock by code
+async function searchStock(code) {
+    try {
+        const response = await fetch(`/api/stock/search/${code}`);
+        const data = await response.json();
         
-        if (worker) {
+        if (data.success) {
+            currentProduct = data.product;
+            document.getElementById('productDetails').style.display = 'block';
+            document.getElementById('productName').textContent = data.product.name;
+            document.getElementById('productPrice').textContent = data.product.price.toFixed(2);
+            document.getElementById('productStock').textContent = data.product.stock;
+            document.getElementById('itemPrice').value = data.product.price;
+            document.getElementById('itemQuantity').focus();
+        } else {
+            document.getElementById('productDetails').style.display = 'none';
+            currentProduct = null;
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        notify('Error searching product', 'error');
+    }
+}
+
+// Check worker
+async function checkWorker(number) {
+    try {
+        const response = await fetch(`/api/workers/get/${number}`);
+        const data = await response.json();
+        
+        if (data.success) {
             document.getElementById('workerInfo').style.display = 'block';
-            document.getElementById('workerName').textContent = worker.name;
-            document.getElementById('currentIncentive').textContent = (totalPieces * 1).toFixed(2);
+            document.getElementById('workerName').textContent = data.worker.name;
+            const pieces = billItems.reduce((s,i) => s + i.qty, 0);
+            document.getElementById('workerIncentive').textContent = pieces;
         } else {
             document.getElementById('workerInfo').style.display = 'none';
         }
-    });
+    } catch (error) {
+        document.getElementById('workerInfo').style.display = 'none';
+    }
 }
 
-// Add Item
+// Add item to bill
 function addItem() {
     if (!currentProduct) {
         notify('Please enter a valid stock code', 'error');
@@ -190,6 +112,7 @@ function addItem() {
     }
     
     const qty = parseInt(document.getElementById('itemQuantity').value);
+    const price = parseFloat(document.getElementById('itemPrice').value);
     const disc = parseFloat(document.getElementById('itemDiscount').value) || 0;
     
     if (qty > currentProduct.stock) {
@@ -197,42 +120,26 @@ function addItem() {
         return;
     }
     
-    const total = (qty * currentProduct.price) * (1 - disc/100);
+    const total = (qty * price) * (1 - disc/100);
     
     billItems.push({
         id: Date.now(),
         code: currentProduct.code,
         name: currentProduct.name,
-        qty,
-        price: currentProduct.price,
-        disc,
-        total
+        qty, price, disc, total
     });
     
     updateBillTable();
     document.getElementById('stockCode').value = '';
-    hideProductDetails();
+    document.getElementById('productDetails').style.display = 'none';
+    currentProduct = null;
     document.getElementById('stockCode').focus();
     notify('Item added!', 'success');
-    
-    // Update worker incentive preview
-    const workerNum = document.getElementById('workerNumber').value;
-    if (workers[workerNum]) {
-        const totalPieces = billItems.reduce((sum, item) => sum + item.qty, 0);
-        document.getElementById('currentIncentive').textContent = (totalPieces * 1).toFixed(2);
-    }
 }
 
 function removeItem(id) {
     billItems = billItems.filter(i => i.id !== id);
     updateBillTable();
-    
-    // Update worker incentive preview
-    const workerNum = document.getElementById('workerNumber').value;
-    if (workers[workerNum]) {
-        const totalPieces = billItems.reduce((sum, item) => sum + item.qty, 0);
-        document.getElementById('currentIncentive').textContent = (totalPieces * 1).toFixed(2);
-    }
 }
 
 function updateBillTable() {
@@ -245,144 +152,93 @@ function updateBillTable() {
         return;
     }
     
-    tbody.innerHTML = billItems.map(item => `
+    tbody.innerHTML = billItems.map(i => `
         <tr>
-            <td>${item.name}</td>
-            <td>${item.qty}</td>
-            <td>₹${item.price.toFixed(2)}</td>
-            <td>${item.disc}%</td>
-            <td>₹${item.total.toFixed(2)}</td>
-            <td><button class="btn btn-danger" onclick="removeItem(${item.id})">Remove</button></td>
+            <td>${i.name}</td>
+            <td>${i.qty}</td>
+            <td>₹${i.price.toFixed(2)}</td>
+            <td>${i.disc}%</td>
+            <td>₹${i.total.toFixed(2)}</td>
+            <td><button class="btn btn-danger" onclick="removeItem(${i.id})">Remove</button></td>
         </tr>
     `).join('');
     
-    const subtotal = billItems.reduce((sum, item) => sum + item.total, 0);
+    const subtotal = billItems.reduce((s,i) => s + i.total, 0);
     document.getElementById('subtotal').textContent = '₹' + subtotal.toFixed(2);
     document.getElementById('total').textContent = '₹' + subtotal.toFixed(2);
 }
 
-// Generate Bill
-function generateBill() {
+// Generate bill
+async function generateBill() {
     const name = document.getElementById('customerName').value.trim();
     const phone = document.getElementById('customerPhone').value.trim();
     const email = document.getElementById('customerEmail').value.trim();
     const address = document.getElementById('customerAddress').value.trim();
     const workerNum = document.getElementById('workerNumber').value.trim();
     
-    if (!name || !phone) {
-        notify('Enter customer name and phone', 'error');
+    if (!name || !phone || billItems.length === 0 || !workerNum) {
+        notify('Fill all required fields and add items', 'error');
         return;
     }
     
-    if (billItems.length === 0) {
-        notify('Add at least one item', 'error');
-        return;
+    try {
+        const workerResponse = await fetch(`/api/workers/get/${workerNum}`);
+        const workerData = await workerResponse.json();
+        
+        if (!workerData.success) {
+            notify('Invalid worker number', 'error');
+            return;
+        }
+        
+        const billData = {
+            customer: { name, phone, email, address },
+            items: billItems,
+            workerNumber: workerNum,
+            workerName: workerData.worker.name
+        };
+        
+        const response = await fetch('/api/bills/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(billData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showBillModal(data.bill);
+            resetForm();
+            notify('Bill generated successfully!', 'success');
+        } else {
+            notify('Error generating bill', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        notify('Error generating bill', 'error');
     }
-    
-    if (!workerNum || !workers[workerNum]) {
-        notify('Enter a valid worker number', 'error');
-        return;
-    }
-    
-    const totalPcs = billItems.reduce((sum, item) => sum + item.qty, 0);
-    const subtotal = billItems.reduce((sum, item) => sum + item.total, 0);
-    const worker = workers[workerNum];
-    
-    const bill = {
-        id: 'BILL' + Date.now(),
-        date: new Date().toLocaleString('en-IN'),
-        customer: {name, phone, email, address},
-        items: [...billItems],
-        totalPcs,
-        total: subtotal,
-        workerNumber: workerNum,
-        workerName: worker.name,
-        incentive: totalPcs * 1
-    };
-    
-    bills.push(bill);
-    
-    // Update customer
-    if (!customers[phone]) {
-        customers[phone] = {name, phone, email, address, bills: []};
-    }
-    customers[phone].bills.push(bill);
-    
-    // Update worker stats
-    worker.pieces += totalPcs;
-    worker.bills += 1;
-    worker.incentive = worker.pieces * 1;
-    
-    // Update stock
-    billItems.forEach(item => {
-        stock[item.code].stock -= item.qty;
-    });
-    
-    saveData();
-    showBillModal(bill);
-    resetForm();
-    updateStockTable();
-    updateWorkerTable();
-    updateReports();
-    notify('Bill generated successfully!', 'success');
 }
 
 function showBillModal(bill) {
     document.getElementById('printContent').innerHTML = `
         <div style="max-width:650px;margin:auto;">
-            <div style="text-align:center;border-bottom:2px solid #5B5FD8;padding-bottom:1rem;margin-bottom:1.5rem;">
-                <h2 style="color:#5B5FD8;">Billing System Pro</h2>
-                <p style="color:#6B7280;">Thank you for your business!</p>
-            </div>
-            
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;">
-                <div><strong>Bill ID:</strong> ${bill.id}</div>
-                <div><strong>Date:</strong> ${bill.date}</div>
-            </div>
-            
-            <div style="background:#F9FAFB;padding:1rem;border-radius:6px;margin-bottom:1.5rem;">
-                <strong>Customer:</strong><br>
-                ${bill.customer.name}<br>
-                ${bill.customer.phone}<br>
-                ${bill.customer.email ? bill.customer.email + '<br>' : ''}
-                ${bill.customer.address || ''}
-            </div>
-            
-            <table style="width:100%;border-collapse:collapse;margin-bottom:1.5rem;">
-                <thead style="background:#F9FAFB;">
-                    <tr>
-                        <th style="padding:0.75rem;text-align:left;border-bottom:1px solid #E5E7EB;">Item</th>
-                        <th style="padding:0.75rem;text-align:left;border-bottom:1px solid #E5E7EB;">Qty</th>
-                        <th style="padding:0.75rem;text-align:left;border-bottom:1px solid #E5E7EB;">Price</th>
-                        <th style="padding:0.75rem;text-align:left;border-bottom:1px solid #E5E7EB;">Disc</th>
-                        <th style="padding:0.75rem;text-align:left;border-bottom:1px solid #E5E7EB;">Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${bill.items.map(item => `
-                        <tr>
-                            <td style="padding:0.75rem;border-bottom:1px solid #E5E7EB;">${item.name}</td>
-                            <td style="padding:0.75rem;border-bottom:1px solid #E5E7EB;">${item.qty}</td>
-                            <td style="padding:0.75rem;border-bottom:1px solid #E5E7EB;">₹${item.price.toFixed(2)}</td>
-                            <td style="padding:0.75rem;border-bottom:1px solid #E5E7EB;">${item.disc}%</td>
-                            <td style="padding:0.75rem;border-bottom:1px solid #E5E7EB;">₹${item.total.toFixed(2)}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
+            <h2 style="text-align:center;color:#5B5FD8;margin-bottom:1rem;">Billing System Pro</h2>
+            <p><strong>Bill ID:</strong> ${bill.id}</p>
+            <p><strong>Date:</strong> ${bill.date}</p>
+            <hr style="margin:1rem 0;">
+            <p><strong>Customer:</strong> ${bill.customer.name}</p>
+            <p><strong>Phone:</strong> ${bill.customer.phone}</p>
+            ${bill.customer.email ? `<p><strong>Email:</strong> ${bill.customer.email}</p>` : ''}
+            ${bill.customer.address ? `<p><strong>Address:</strong> ${bill.customer.address}</p>` : ''}
+            <hr style="margin:1rem 0;">
+            <table style="width:100%;border-collapse:collapse;">
+                <tr style="background:#f5f5f5;"><th style="padding:0.5rem;text-align:left;">Item</th><th>Qty</th><th>Price</th><th>Disc</th><th>Total</th></tr>
+                ${bill.items.map(i => `<tr><td style="padding:0.5rem;">${i.name}</td><td>${i.qty}</td><td>₹${i.price.toFixed(2)}</td><td>${i.disc}%</td><td>₹${i.total.toFixed(2)}</td></tr>`).join('')}
             </table>
-            
-            <div style="text-align:right;margin-bottom:1rem;">
-                <div style="margin-bottom:0.5rem;">
-                    <strong>Subtotal:</strong> ₹${bill.total.toFixed(2)}
-                </div>
-                <div style="font-size:1.25rem;font-weight:700;color:#5B5FD8;">
-                    <strong>Total:</strong> ₹${bill.total.toFixed(2)}
-                </div>
-            </div>
-            
-            <div style="background:#D1FAE5;padding:1rem;border-radius:6px;text-align:center;">
-                <strong>Served by:</strong> ${bill.workerName} (${bill.workerNumber})<br>
-                <span style="color:#059669;">Worker Incentive: ₹${bill.incentive.toFixed(2)} (${bill.totalPcs} pieces × ₹1)</span>
+            <hr style="margin:1rem 0;">
+            <p style="text-align:right;font-size:1.2rem;"><strong>Total: ₹${bill.total.toFixed(2)}</strong></p>
+            <div style="background:#d1fae5;padding:1rem;border-radius:6px;margin-top:1rem;">
+                <p><strong>Served by:</strong> ${bill.workerName} (${bill.workerNumber})</p>
+                <p><strong>Worker Incentive:</strong> ₹${bill.incentive} (${bill.totalPieces} pieces × ₹1)</p>
             </div>
         </div>
     `;
@@ -406,48 +262,67 @@ function resetForm() {
     document.getElementById('customerName').focus();
 }
 
-// Stock Management
-function addProduct() {
-    const code = document.getElementById('newCode').value.trim();
-    const name = document.getElementById('newName').value.trim();
-    const price = parseFloat(document.getElementById('newPrice').value);
-    const stk = parseInt(document.getElementById('newStock').value);
+// Add product
+async function addProduct() {
+    const code = document.getElementById('newProductCode').value.trim();
+    const name = document.getElementById('newProductName').value.trim();
+    const price = parseFloat(document.getElementById('newProductPrice').value);
+    const stock = parseInt(document.getElementById('newProductStock').value);
     
-    if (!code || !name || !price || isNaN(stk)) {
+    if (!code || !name || !price || stock < 0) {
         notify('Fill all fields', 'error');
         return;
     }
     
-    if (stock[code]) {
-        notify('Product code already exists', 'error');
-        return;
+    try {
+        const response = await fetch('/api/stock/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code, name, price, stock })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            notify('Product added!', 'success');
+            document.getElementById('newProductCode').value = '';
+            document.getElementById('newProductName').value = '';
+            document.getElementById('newProductPrice').value = '';
+            document.getElementById('newProductStock').value = '';
+            loadStock();
+        } else {
+            notify(data.message, 'error');
+        }
+    } catch (error) {
+        notify('Error adding product', 'error');
     }
-    
-    stock[code] = {code, name, price, stock: stk};
-    saveData();
-    updateStockTable();
-    document.getElementById('newCode').value = '';
-    document.getElementById('newName').value = '';
-    document.getElementById('newPrice').value = '';
-    document.getElementById('newStock').value = '';
-    notify('Product added!', 'success');
 }
 
-function updateStockTable() {
-    const tbody = document.getElementById('stockTable');
-    tbody.innerHTML = Object.values(stock).map(p => `
-        <tr>
-            <td><strong>${p.code}</strong></td>
-            <td>${p.name}</td>
-            <td>₹${p.price.toFixed(2)}</td>
-            <td>${p.stock}</td>
-            <td>₹${(p.price * p.stock).toFixed(2)}</td>
-        </tr>
-    `).join('');
+// Load stock
+async function loadStock() {
+    try {
+        const response = await fetch('/api/stock/all');
+        const data = await response.json();
+        
+        if (data.success) {
+            const tbody = document.getElementById('stockTableBody');
+            tbody.innerHTML = Object.values(data.stock).map(p => `
+                <tr>
+                    <td><strong>${p.code}</strong></td>
+                    <td>${p.name}</td>
+                    <td>₹${p.price.toFixed(2)}</td>
+                    <td>${p.stock}</td>
+                    <td>₹${(p.price * p.stock).toFixed(2)}</td>
+                </tr>
+            `).join('');
+        }
+    } catch (error) {
+        console.error('Error loading stock:', error);
+    }
 }
 
-// Worker Management
-function addWorker() {
+// Add worker
+async function addWorker() {
     const number = document.getElementById('newWorkerNumber').value.trim();
     const name = document.getElementById('newWorkerName').value.trim();
     
@@ -456,171 +331,168 @@ function addWorker() {
         return;
     }
     
-    if (workers[number]) {
-        notify('Worker number already exists', 'error');
-        return;
+    try {
+        const response = await fetch('/api/workers/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ number, name })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            notify('Worker added!', 'success');
+            document.getElementById('newWorkerNumber').value = '';
+            document.getElementById('newWorkerName').value = '';
+            loadWorkers();
+        } else {
+            notify(data.message, 'error');
+        }
+    } catch (error) {
+        notify('Error adding worker', 'error');
     }
-    
-    workers[number] = {number, name, pieces: 0, bills: 0, incentive: 0};
-    saveData();
-    updateWorkerTable();
-    document.getElementById('newWorkerNumber').value = '';
-    document.getElementById('newWorkerName').value = '';
-    notify('Worker added!', 'success');
 }
 
-function updateWorkerTable() {
-    const tbody = document.getElementById('workerTable');
-    tbody.innerHTML = Object.values(workers).map(w => `
-        <tr>
-            <td><strong>${w.number}</strong></td>
-            <td>${w.name}</td>
-            <td>${w.pieces}</td>
-            <td>${w.bills}</td>
-            <td style="color:#10B981;"><strong>₹${w.incentive.toFixed(2)}</strong></td>
-        </tr>
-    `).join('');
+// Load workers
+async function loadWorkers() {
+    try {
+        const response = await fetch('/api/workers/all');
+        const data = await response.json();
+        
+        if (data.success) {
+            const tbody = document.getElementById('workersTableBody');
+            tbody.innerHTML = Object.values(data.workers).map(w => `
+                <tr>
+                    <td><strong>${w.number}</strong></td>
+                    <td>${w.name}</td>
+                    <td>${w.pieces}</td>
+                    <td>${w.bills}</td>
+                    <td style="color:#10B981;"><strong>₹${w.incentive.toFixed(2)}</strong></td>
+                    <td>
+                        <button class="btn btn-danger" onclick="deleteWorker('${w.number}', '${w.name}')" 
+                                style="padding:0.4rem 0.8rem;font-size:0.85rem;">
+                            🗑️ Delete
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    } catch (error) {
+        console.error('Error loading workers:', error);
+    }
 }
 
-// Customer Search
-function searchCustomer() {
+// Search customer
+async function searchCustomer() {
     const phone = document.getElementById('searchPhone').value.trim();
-    const div = document.getElementById('customerResult');
-    const cust = customers[phone];
     
-    if (!cust) {
-        div.innerHTML = '<p style="color:#EF4444;">Customer not found</p>';
-        div.style.display = 'block';
+    if (!phone) {
+        notify('Enter phone number', 'error');
         return;
     }
     
-    const sorted = [...cust.bills].sort((a, b) => new Date(b.date) - new Date(a.date));
-    const last = sorted[0];
-    
-    div.innerHTML = `
-        <h3>${cust.name}</h3>
-        <p>Phone: ${cust.phone}</p>
-        <p>Total Bills: ${cust.bills.length}</p>
-        <p>Total Spent: ₹${cust.bills.reduce((s, b) => s + b.total, 0).toFixed(2)}</p>
+    try {
+        const response = await fetch(`/api/customers/search/${phone}`);
+        const data = await response.json();
         
-        <div style="background:#FEF3C7;padding:1rem;border-radius:6px;border-left:4px solid #F59E0B;margin:1rem 0;">
-            <h4 style="color:#F59E0B;">📋 LAST BILL</h4>
-            <p><strong>ID:</strong> ${last.id}</p>
-            <p><strong>Date:</strong> ${last.date}</p>
-            <p><strong>Amount:</strong> ₹${last.total.toFixed(2)}</p>
-            <p><strong>Items:</strong> ${last.items.length} (${last.totalPcs} pieces)</p>
-            <p><strong>Worker:</strong> ${last.workerName}</p>
-        </div>
+        const div = document.getElementById('customerResult');
         
-        <h4>All Bills:</h4>
-        <table>
-            <thead><tr><th>Bill ID</th><th>Date</th><th>Amount</th><th>Worker</th></tr></thead>
-            <tbody>
-                ${sorted.map(b => `
+        if (data.success) {
+            const c = data.customer;
+            const sorted = [...c.bills].sort((a,b) => new Date(b.date) - new Date(a.date));
+            const last = sorted[0];
+            
+            div.innerHTML = `
+                <h3>${c.name}</h3>
+                <p>Phone: ${c.phone}</p>
+                <p>Total Bills: ${c.bills.length}</p>
+                <div style="background:#FEF3C7;padding:1rem;border-radius:6px;margin:1rem 0;">
+                    <h4 style="color:#F59E0B;">📋 LAST BILL</h4>
+                    <p><strong>ID:</strong> ${last.id}</p>
+                    <p><strong>Date:</strong> ${last.date}</p>
+                    <p><strong>Amount:</strong> ₹${last.total.toFixed(2)}</p>
+                    <p><strong>Worker:</strong> ${last.workerName}</p>
+                </div>
+            `;
+            div.style.display = 'block';
+        } else {
+            div.innerHTML = '<p style="color:#EF4444;">Customer not found</p>';
+            div.style.display = 'block';
+        }
+    } catch (error) {
+        notify('Error searching customer', 'error');
+    }
+}
+
+// Load reports
+async function loadReports() {
+    try {
+        const response = await fetch('/api/reports/summary');
+        const data = await response.json();
+        
+        if (data.success) {
+            const s = data.summary;
+            document.getElementById('repTotalSales').textContent = '₹' + s.totalSales.toFixed(2);
+            document.getElementById('repTotalBills').textContent = s.totalBills;
+            document.getElementById('repTotalCustomers').textContent = s.totalCustomers;
+            document.getElementById('repTotalIncentives').textContent = '₹' + s.totalIncentives.toFixed(2);
+            
+            // Recent bills
+            const recentBody = document.getElementById('recentBillsBody');
+            if (s.recentBills.length === 0) {
+                recentBody.innerHTML = '<tr><td colspan="7" class="empty-state">No bills yet</td></tr>';
+            } else {
+                recentBody.innerHTML = s.recentBills.map(b => `
                     <tr>
-                        <td>${b.id}</td>
+                        <td><strong>${b.id}</strong></td>
                         <td>${b.date}</td>
-                        <td>₹${b.total.toFixed(2)}</td>
+                        <td>${b.customer.name}</td>
+                        <td>${b.customer.phone}</td>
+                        <td>${b.items.length} (${b.totalPieces} pcs)</td>
+                        <td><strong>₹${b.total.toFixed(2)}</strong></td>
                         <td>${b.workerName}</td>
                     </tr>
-                `).join('')}
-            </tbody>
-        </table>
-    `;
-    div.style.display = 'block';
-}
-
-// UPDATE REPORTS - WORKING VERSION
-function updateReports() {
-    // Total Sales
-    const totalSales = bills.reduce((sum, b) => sum + b.total, 0);
-    document.getElementById('repSales').textContent = '₹' + totalSales.toFixed(2);
-    
-    // Total Bills
-    document.getElementById('repBills').textContent = bills.length;
-    
-    // Total Customers
-    document.getElementById('repCustomers').textContent = Object.keys(customers).length;
-    
-    // Total Incentives
-    const totalIncentives = Object.values(workers).reduce((sum, w) => sum + w.incentive, 0);
-    document.getElementById('repIncentives').textContent = '₹' + totalIncentives.toFixed(2);
-    
-    // Recent Bills
-    const tbody = document.getElementById('recentBillsTable');
-    if (bills.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No bills yet</td></tr>';
-    } else {
-        const recent = [...bills].reverse().slice(0, 10);
-        tbody.innerHTML = recent.map(b => `
-            <tr>
-                <td><strong>${b.id}</strong></td>
-                <td>${b.date}</td>
-                <td>${b.customer.name}</td>
-                <td>${b.customer.phone}</td>
-                <td>${b.items.length} (${b.totalPcs} pcs)</td>
-                <td><strong>₹${b.total.toFixed(2)}</strong></td>
-                <td>${b.workerName}</td>
-            </tr>
-        `).join('');
-    }
-    
-    // Top Products
-    const productSales = {};
-    bills.forEach(bill => {
-        bill.items.forEach(item => {
-            if (!productSales[item.code]) {
-                productSales[item.code] = {
-                    name: item.name,
-                    qty: 0,
-                    revenue: 0
-                };
+                `).join('');
             }
-            productSales[item.code].qty += item.qty;
-            productSales[item.code].revenue += item.total;
-        });
-    });
-    
-    const topProducts = Object.values(productSales)
-        .sort((a, b) => b.revenue - a.revenue)
-        .slice(0, 5);
-    
-    const topProdTable = document.getElementById('topProductsTable');
-    if (topProducts.length === 0) {
-        topProdTable.innerHTML = '<tr><td colspan="3" class="empty-state">No sales yet</td></tr>';
-    } else {
-        topProdTable.innerHTML = topProducts.map(p => `
-            <tr>
-                <td><strong>${p.name}</strong></td>
-                <td>${p.qty} units</td>
-                <td><strong>₹${p.revenue.toFixed(2)}</strong></td>
-            </tr>
-        `).join('');
+            
+            // Top products
+            const topBody = document.getElementById('topProductsBody');
+            if (s.topProducts.length === 0) {
+                topBody.innerHTML = '<tr><td colspan="3" class="empty-state">No sales yet</td></tr>';
+            } else {
+                topBody.innerHTML = s.topProducts.map(p => `
+                    <tr>
+                        <td><strong>${p.name}</strong></td>
+                        <td>${p.qty} units</td>
+                        <td><strong>₹${p.revenue.toFixed(2)}</strong></td>
+                    </tr>
+                `).join('');
+            }
+        }
+    } catch (error) {
+        console.error('Error loading reports:', error);
     }
 }
 
-// Data Persistence
-function saveData() {
-    localStorage.setItem('billingData', JSON.stringify({
-        stock,
-        workers,
-        customers,
-        bills
-    }));
+// Show section
+function showSection(name) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
+    document.getElementById(name).classList.add('active');
+    event.target.classList.add('active');
+    
+    if (name === 'stock') loadStock();
+    if (name === 'incentives') checkSupervisorSession();
+    if (name === 'reports') loadReports();
 }
 
-function loadData() {
-    const saved = localStorage.getItem('billingData');
-    if (saved) {
-        const data = JSON.parse(saved);
-        stock = data.stock || stock;
-        workers = data.workers || workers;
-        customers = data.customers || customers;
-        bills = data.bills || bills;
-    }
+// Load initial data
+function loadInitialData() {
+    loadStock();
+    checkSupervisorSession();
 }
 
-// Notifications
+// Notification
 function notify(message, type) {
     const div = document.createElement('div');
     div.style.cssText = `
@@ -633,10 +505,294 @@ function notify(message, type) {
         font-weight: 500;
         z-index: 10000;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        animation: slideIn 0.3s;
     `;
     div.style.background = type === 'success' ? '#10B981' : '#EF4444';
     div.textContent = message;
     document.body.appendChild(div);
     setTimeout(() => div.remove(), 3000);
+}
+
+// Clear monthly incentives
+async function clearMonthlyIncentives() {
+    // Password verification
+    const password = prompt('🔒 Enter supervisor password to clear all incentives:');
+    if (!password) return;
+    
+    // Verify password
+    const verifyResponse = await fetch('/api/verify-supervisor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+    });
+    
+    const verifyData = await verifyResponse.json();
+    if (!verifyData.success) {
+        notify('❌ Invalid password!', 'error');
+        return;
+    }
+    
+    // Confirm action
+    const confirmed = confirm(
+        '⚠️ WARNING: This will reset ALL worker incentives to ₹0.\n\n' +
+        'Pieces sold count and bills served will also be reset.\n\n' +
+        'This action cannot be undone!\n\n' +
+        'Are you sure you want to clear all incentives?'
+    );
+    
+    if (!confirmed) return;
+    
+    // Final confirmation
+    const monthConfirm = prompt('Type "CLEAR" to confirm monthly reset:');
+    
+    if (monthConfirm !== 'CLEAR') {
+        notify('Reset cancelled', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/workers/clear-incentives', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            notify('✅ All worker incentives cleared successfully!', 'success');
+            loadWorkers();
+        } else {
+            notify('Error: ' + data.message, 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        notify('Error clearing incentives', 'error');
+    }
+}
+
+// Supervisor login
+async function loginSupervisor() {
+    const password = document.getElementById('supervisorPassword').value;
+    
+    if (!password) {
+        notify('Enter password', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/verify-supervisor', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('supervisorLogin').style.display = 'none';
+            document.getElementById('supervisorContent').style.display = 'block';
+            sessionStorage.setItem('supervisorLoggedIn', 'true');
+            loadWorkers();
+            notify('✅ Logged in as Supervisor', 'success');
+        } else {
+            notify('❌ Invalid password', 'error');
+            document.getElementById('supervisorPassword').value = '';
+        }
+    } catch (error) {
+        notify('Error logging in', 'error');
+    }
+}
+
+// Supervisor logout
+function logoutSupervisor() {
+    document.getElementById('supervisorLogin').style.display = 'block';
+    document.getElementById('supervisorContent').style.display = 'none';
+    document.getElementById('supervisorPassword').value = '';
+    sessionStorage.removeItem('supervisorLoggedIn');
+    notify('Logged out', 'success');
+}
+
+// Check supervisor session on page load
+function checkSupervisorSession() {
+    if (sessionStorage.getItem('supervisorLoggedIn') === 'true') {
+        document.getElementById('supervisorLogin').style.display = 'none';
+        document.getElementById('supervisorContent').style.display = 'block';
+    }
+}
+
+// Delete single worker (with password and verification)
+async function deleteWorker(workerNumber, workerName) {
+    // Password verification
+    const password = prompt('🔒 Enter supervisor password to delete worker:');
+    if (!password) return;
+    
+    // Verify password
+    const verifyResponse = await fetch('/api/verify-supervisor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+    });
+    
+    const verifyData = await verifyResponse.json();
+    if (!verifyData.success) {
+        notify('❌ Invalid password!', 'error');
+        return;
+    }
+    
+    // Verification questions
+    const confirmName = prompt(`⚠️ VERIFICATION REQUIRED\n\nEnter the worker's NAME to confirm deletion:\n(Type exactly: ${workerName})`);
+    if (confirmName !== workerName) {
+        notify('❌ Name does not match. Deletion cancelled.', 'error');
+        return;
+    }
+    
+    const confirmNumber = prompt(`Enter the worker's NUMBER to confirm:\n(Type exactly: ${workerNumber})`);
+    if (confirmNumber !== workerNumber) {
+        notify('❌ Number does not match. Deletion cancelled.', 'error');
+        return;
+    }
+    
+    // Get incentive amount for final confirmation
+    const workerResponse = await fetch(`/api/workers/get/${workerNumber}`);
+    const workerData = await workerResponse.json();
+    
+    if (workerData.success) {
+        const incentive = workerData.worker.incentive;
+        const pieces = workerData.worker.pieces;
+        
+        const finalConfirm = confirm(
+            `⚠️ FINAL CONFIRMATION\n\n` +
+            `Worker: ${workerName} (${workerNumber})\n` +
+            `Current Incentive: ₹${incentive}\n` +
+            `Pieces Sold: ${pieces}\n\n` +
+            `This worker will be PERMANENTLY DELETED!\n\n` +
+            `Are you absolutely sure?`
+        );
+        
+        if (!finalConfirm) {
+            notify('Deletion cancelled', 'error');
+            return;
+        }
+    }
+    
+    // Delete worker
+    try {
+        const response = await fetch('/api/workers/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                number: workerNumber,
+                password: password
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            notify(`✅ Worker ${workerName} deleted successfully`, 'success');
+            loadWorkers();
+        } else {
+            notify('Error: ' + data.message, 'error');
+        }
+    } catch (error) {
+        notify('Error deleting worker', 'error');
+    }
+}
+
+// Adjust worker incentive (Supervisor only)
+async function adjustWorkerIncentive() {
+    const workerNumber = document.getElementById('adjustWorkerNumber').value.trim();
+    const pieces = parseInt(document.getElementById('adjustPieces').value);
+    const reason = document.getElementById('adjustReason').value.trim();
+    
+    if (!workerNumber || isNaN(pieces) || !reason) {
+        notify('Fill all fields', 'error');
+        return;
+    }
+    
+    // Password verification
+    const password = prompt('🔒 Enter supervisor password to adjust incentive:');
+    if (!password) return;
+    
+    const verifyResponse = await fetch('/api/verify-supervisor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+    });
+    
+    const verifyData = await verifyResponse.json();
+    if (!verifyData.success) {
+        notify('❌ Invalid password!', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/workers/adjust-incentive', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                number: workerNumber, 
+                pieces, 
+                reason,
+                password 
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            notify(`✅ Incentive adjusted for worker ${workerNumber}`, 'success');
+            document.getElementById('adjustWorkerNumber').value = '';
+            document.getElementById('adjustPieces').value = '';
+            document.getElementById('adjustReason').value = '';
+            loadWorkers();
+        } else {
+            notify('Error: ' + data.message, 'error');
+        }
+    } catch (error) {
+        notify('Error adjusting incentive', 'error');
+    }
+}
+
+// Export incentive report
+function exportIncentiveReport() {
+    const now = new Date();
+    const month = now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+    
+    fetch('/api/workers/all')
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                let report = `WORKER INCENTIVE REPORT\n`;
+                report += `Month: ${month}\n`;
+                report += `Generated: ${now.toLocaleString('en-IN')}\n`;
+                report += `\n${'='.repeat(60)}\n\n`;
+                
+                let totalIncentive = 0;
+                let totalPieces = 0;
+                
+                Object.values(data.workers).forEach(w => {
+                    report += `Worker: ${w.name} (${w.number})\n`;
+                    report += `  Pieces Sold: ${w.pieces}\n`;
+                    report += `  Bills Served: ${w.bills}\n`;
+                    report += `  Incentive: ₹${w.incentive.toFixed(2)}\n\n`;
+                    totalIncentive += w.incentive;
+                    totalPieces += w.pieces;
+                });
+                
+                report += `${'='.repeat(60)}\n`;
+                report += `TOTAL PIECES: ${totalPieces}\n`;
+                report += `TOTAL INCENTIVE: ₹${totalIncentive.toFixed(2)}\n`;
+                
+                // Download as text file
+                const blob = new Blob([report], { type: 'text/plain' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Incentive_Report_${now.getFullYear()}_${now.getMonth()+1}.txt`;
+                a.click();
+                
+                notify('📄 Report exported!', 'success');
+            }
+        });
 }
