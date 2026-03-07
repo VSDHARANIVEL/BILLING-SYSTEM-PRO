@@ -179,6 +179,158 @@ def add_worker():
         conn.close()
         return jsonify({'success': False, 'message': 'Worker already exists'}), 400
 
+@app.route('/api/workers/clear-incentives', methods=['POST'])
+def clear_incentives():
+    """Clear all worker incentives (monthly reset)"""
+    try:
+        data = request.json
+        password = data.get('password', '')
+        
+        # Verify supervisor password
+        if password != 'admin123':  # Change this password in production!
+            return jsonify({
+                'success': False,
+                'message': 'Invalid password'
+            }), 401
+        
+        conn = get_db()
+        c = conn.cursor()
+        
+        # Reset all workers to zero
+        c.execute('''UPDATE workers 
+                     SET pieces = 0, bills = 0, incentive = 0''')
+        
+        conn.commit()
+        
+        # Get count of workers reset
+        c.execute('SELECT COUNT(*) FROM workers')
+        count = c.fetchone()[0]
+        
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Reset {count} workers',
+            'workers_reset': count
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/verify-supervisor', methods=['POST'])
+def verify_supervisor():
+    """Verify supervisor password"""
+    data = request.json
+    password = data.get('password', '')
+    
+    # Default password: admin123 (CHANGE THIS IN PRODUCTION!)
+    if password == 'admin123':
+        return jsonify({'success': True})
+    else:
+        return jsonify({'success': False, 'message': 'Invalid password'}), 401
+
+@app.route('/api/workers/delete', methods=['POST'])
+def delete_worker():
+    """Delete a worker (with password verification)"""
+    try:
+        data = request.json
+        number = data.get('number')
+        password = data.get('password', '')
+        
+        # Verify supervisor password
+        if password != 'admin123':
+            return jsonify({
+                'success': False,
+                'message': 'Invalid password'
+            }), 401
+        
+        conn = get_db()
+        c = conn.cursor()
+        
+        # Check if worker exists
+        c.execute('SELECT name FROM workers WHERE number = ?', (number,))
+        worker = c.fetchone()
+        
+        if not worker:
+            conn.close()
+            return jsonify({
+                'success': False,
+                'message': 'Worker not found'
+            }), 404
+        
+        # Delete worker
+        c.execute('DELETE FROM workers WHERE number = ?', (number,))
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Worker {number} deleted successfully'
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/workers/adjust-incentive', methods=['POST'])
+def adjust_incentive():
+    """Adjust worker incentive manually (Supervisor only)"""
+    try:
+        data = request.json
+        number = data.get('number')
+        pieces = int(data.get('pieces', 0))
+        reason = data.get('reason', '')
+        password = data.get('password', '')
+        
+        # Verify supervisor password
+        if password != 'admin123':
+            return jsonify({
+                'success': False,
+                'message': 'Invalid password'
+            }), 401
+        
+        conn = get_db()
+        c = conn.cursor()
+        
+        # Get current worker data
+        c.execute('SELECT * FROM workers WHERE number = ?', (number,))
+        worker = c.fetchone()
+        
+        if not worker:
+            conn.close()
+            return jsonify({
+                'success': False,
+                'message': 'Worker not found'
+            }), 404
+        
+        # Update pieces and recalculate incentive
+        new_pieces = worker['pieces'] + pieces
+        if new_pieces < 0:
+            new_pieces = 0
+        
+        new_incentive = new_pieces * 1
+        
+        c.execute('''UPDATE workers 
+                     SET pieces = ?, incentive = ? 
+                     WHERE number = ?''',
+                  (new_pieces, new_incentive, number))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Adjusted {number}: {pieces:+d} pieces. Reason: {reason}'
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
 @app.route('/api/bills/create', methods=['POST'])
 def create_bill():
     data = request.json
